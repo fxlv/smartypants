@@ -27,7 +27,7 @@ def zbx():
 @pytest.fixture
 def zbx_cfg():
     c = Config()
-    return c.get_zabbix_config()
+    return c.zabbix
 
 
 @pytest.fixture
