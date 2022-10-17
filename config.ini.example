@@ -1,0 +1,15 @@
+[mqtt]
+server = mqtt server address or hostname here
+port = 1883
+timeout = 60
+topic = topic you use for smart home stuff
+
+[zabbix]
+api_server = http://your server ip or hostname
+zbx_server = your server ip or hostname
+zbx_port = 10051
+zbx_timeout = 5
+# trapper host
+host = host name of the trapper
+host_id = host id (integer)
+token = authentication token
