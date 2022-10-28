@@ -1,24 +1,28 @@
 import json
 from queue import Queue
-from threading import Thread
+from threading import Thread, Event
 
 import paho.mqtt.client as mqtt_client
 from devtools import debug
 from loguru import logger
 
 from smartypants import config
+import time
 
 
 def run_pubsub(c: config.Config):
     p_thread = PubSubThread(c)
     p_thread.start()
+    return p_thread
 
 
 class PubSubThread(Thread):
     def __init__(self, c: config.Config):
         self.c: config.Config = c
         self.q = Queue()
+        self.stop_event = Event()
         Thread.__init__(self)
+        self.daemon = True
 
     def _combine_topic(self, topic) -> str:
         """Combine the base_topic with device topic."""
@@ -33,7 +37,7 @@ class PubSubThread(Thread):
     def on_connect(self, client, userdata, flags, rc):
         logger.debug(f"Connected with result code {rc}")
         for topic in self.c.zigbee_devices.devices:
-            self._subscribe(client, topic)
+            self._subscribe(client, self._combine_topic(topic))
 
     def _get_mqtt_message(self, msg) -> dict:
         """
@@ -51,7 +55,7 @@ class PubSubThread(Thread):
     def _get_client(self):
         return mqtt_client.Client()
 
-    def run(self):
+    def _connect(self):
         c = self.c  # just to make it shorter
         client = self._get_client()
         client.on_connect = self.on_connect
@@ -61,4 +65,13 @@ class PubSubThread(Thread):
             c.mqtt.port,
             c.mqtt.timeout,
         )
-        client.loop_forever()
+        return client
+
+    def run(self):
+        client = self._connect()
+        client.loop_start()
+        while not self.stop_event.is_set():
+            time.sleep(1)
+        logger.debug("Stop event received")
+        time.sleep(1)
+        client.loop_stop()

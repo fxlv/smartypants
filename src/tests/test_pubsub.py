@@ -9,7 +9,7 @@ from unittest.mock import Mock, call
 from loguru import logger
 from hypothesis import given, settings, HealthCheck
 from hypothesis.strategies import text
-
+import time
 import paho.mqtt.client as mqtt_client
 
 
@@ -52,6 +52,7 @@ def test_subscribe(pubsub_thread, caplog, topic):
         * topic was subscribed to
     """
     client = Mock()
+    topic = pubsub_thread._combine_topic(topic)
     pubsub_thread._subscribe(client, topic)
     # validate that event was logged
     assert f"subscribing to {topic}" in caplog.text
@@ -103,10 +104,10 @@ def test_get_client(pubsub_thread):
     assert isinstance(client, mqtt_client.Client)
 
 
-def test_run(pubsub_thread):
+def test_connect(pubsub_thread):
     pubsub_thread._get_client = Mock()  # mock out the mqtt client
-    pubsub_thread.run()
-    assert len(pubsub_thread._get_client.mock_calls) == 3
+    pubsub_thread._connect()
+    assert len(pubsub_thread._get_client.mock_calls) == 2
     calls = [
         call(),
         call().connect(
@@ -114,6 +115,16 @@ def test_run(pubsub_thread):
             pubsub_thread.c.mqtt.port,
             pubsub_thread.c.mqtt.timeout,
         ),
-        call().loop_forever(),
     ]
     pubsub_thread._get_client.assert_has_calls(calls)
+
+
+def test_run_pubsub(caplog):
+    c = config.Config()
+    pubsub_thread = pubsub.run_pubsub(c)
+    assert isinstance(pubsub_thread, Thread)
+    assert pubsub_thread.is_alive()
+    pubsub_thread.stop_event.set()
+    time.sleep(1)
+    assert "Stop event received" in caplog.text
+    assert pubsub_thread.is_alive()
