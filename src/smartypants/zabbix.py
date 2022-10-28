@@ -37,6 +37,9 @@ class ZabbixMetric(BaseModel):
     value: object
 
 
+class ZabbixItemDoesNotExist(Exception):
+    """Raised when requested item does not exist"""
+
 class ZabbixItem(BaseModel):
     itemid: Optional[int] = None
     hostid: str
@@ -87,11 +90,20 @@ class Zabbix:
         assert len(item["itemids"]) == 1
         return int(item["itemids"][0])
 
+    def key_exists(self, key: str) -> bool:
+        try:
+            self.get_item_by_key(key)
+        except ZabbixItemDoesNotExist:
+            return False
+        return True
+
     def get_item_by_key(self, key: str) -> ZabbixItem:
         # api doc for retrieving items https://www.zabbix.com/documentation/current/en/manual/api/reference/item/get
         retrieved_item = self.zapi.item.get(
             filter={"hostid": self.c.config["zabbix"]["host_id"], "key_": key}
         )
+        if len(retrieved_item) != 1:
+            raise ZabbixItemDoesNotExist
         zitem = ZabbixItem.parse_obj(retrieved_item[0])
 
         return zitem

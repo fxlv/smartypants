@@ -3,6 +3,8 @@ import json
 import pytest
 from pyzabbix import ZabbixAPI
 import random
+
+import smartypants.zabbix
 from smartypants.config import Config, ZabbixConfig
 from smartypants.zabbix import (
     Zabbix,
@@ -239,6 +241,15 @@ def test_add_remove_item(zbx):
     assert retrieved_item.key == test_key
     # now, delete the item
     assert zbx.delete_item(retrieved_item.itemid)
+
+
+def test_key_does_not_exist(zbx):
+    with pytest.raises(smartypants.zabbix.ZabbixItemDoesNotExist):
+        zbx.get_item_by_key("nonexistant")
+
+
+def test_key_does_not_exist2(zbx):
+    assert zbx.key_exists("nonexistant") == False
 
 
 def test_send_metric_to_non_existing_key_fails(zbx_agent):
