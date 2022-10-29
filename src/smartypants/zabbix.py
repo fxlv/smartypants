@@ -40,6 +40,7 @@ class ZabbixMetric(BaseModel):
 class ZabbixItemDoesNotExist(Exception):
     """Raised when requested item does not exist"""
 
+
 class ZabbixItem(BaseModel):
     itemid: Optional[int] = None
     hostid: str
