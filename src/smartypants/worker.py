@@ -34,27 +34,130 @@ class LightBulbUpdate(BaseModel):
     state: str
 
 
-class LightBulbColor(BaseModel):
+class Color(BaseModel):
     hue: int
     saturation: int
     x: float
     y: float
 
 
-class LightBulbPayload(BaseModel):
+class LightBulbColorPayload(BaseModel):
     brightness: int
-    color: LightBulbColor
+    color: Color
     color_mode: str
     color_temp: int
     linkquality: int
     state: str
     update: LightBulbUpdate
 
+class LightBulbWarmPayload(BaseModel):
+    brightness: int
+    color_mode: str
+    color_temp: int
+    linkquality: int
+    state: str
+    update: LightBulbUpdate
 
-class LightBulb(BaseModel, ZigbeeDevice):
+class LightBulbColor(BaseModel, ZigbeeDevice):
     topic: str
-    payload: LightBulbPayload
+    payload: LightBulbColorPayload
 
+class LightBulbWarm(BaseModel, ZigbeeDevice):
+    topic: str
+    payload: LightBulbWarmPayload
+
+class HueUpdate(BaseModel):
+    state: str
+
+class HueMotionPayload(BaseModel):
+    battery: int
+    illuminance: float
+    illuminance_lux: float
+    linkquality: int
+    occupancy: int
+    temperature: float
+    update: HueUpdate
+
+class RelayPayload(BaseModel):
+    consumption: float
+    linkquality: int
+    energy: float
+    power: float
+    temperature: float
+    voltage: float
+    state_l1: str
+    state_l2: str
+class HueMotionSensor(BaseModel, ZigbeeDevice):
+    topic: str
+    payload: HueMotionPayload
+    def get_zabbix_keys(self) -> list[ZabbixKeyValue]:
+        """Defines the keys that we want to send to zabbix."""
+        kv_list = []
+        kv_list.append(
+            ZabbixKeyValue(
+                topic=self.topic,
+                key="illuminance_lux",
+                value=self.payload.illuminance_lux,
+                value_type=ZabbixValueType.numeric_float,
+            )
+        )
+        kv_list.append(
+            ZabbixKeyValue(
+                topic=self.topic,
+                key="occupancy",
+                value=self.payload.occupancy,
+                value_type=ZabbixValueType.numeric_unsigned,
+            )
+        )
+        kv_list.append(
+            ZabbixKeyValue(
+                topic=self.topic,
+                key="illuminance",
+                value=self.payload.illuminance,
+                value_type=ZabbixValueType.numeric_float,
+            )
+        )
+        kv_list.append(
+            ZabbixKeyValue(
+                topic=self.topic,
+                key="linkquality",
+                value=self.payload.linkquality,
+                value_type=ZabbixValueType.numeric_float,
+            )
+        )
+        return kv_list
+
+class Relay(BaseModel, ZigbeeDevice):
+    topic: str
+    payload: RelayPayload
+    def get_zabbix_keys(self) -> list[ZabbixKeyValue]:
+        """Defines the keys that we want to send to zabbix."""
+        kv_list = []
+        kv_list.append(
+            ZabbixKeyValue(
+                topic=self.topic,
+                key="temperature",
+                value=self.payload.temperature,
+                value_type=ZabbixValueType.numeric_float,
+            )
+        )
+        kv_list.append(
+            ZabbixKeyValue(
+                topic=self.topic,
+                key="consumption",
+                value=self.payload.consumption,
+                value_type=ZabbixValueType.numeric_float,
+            )
+        )
+        kv_list.append(
+            ZabbixKeyValue(
+                topic=self.topic,
+                key="power",
+                value=self.payload.power,
+                value_type=ZabbixValueType.numeric_float,
+            )
+        )
+        return kv_list
 
 class TempSensorPayload(BaseModel):
     battery: float
@@ -242,8 +345,14 @@ class Worker(Thread):
             device = Radiator(**event_dict)
         elif "sensor" in event_dict["topic"]:
             device = TempSensor(**event_dict)
-        elif "light" in event_dict["topic"]:
-            device = LightBulb(**event_dict)
+        elif "light" in event_dict["topic"] and "color" in event_dict["payload"]:
+            device = LightBulbColor(**event_dict)
+        elif "light" in event_dict["topic"] and "color_temp" in event_dict["payload"]:
+            device = LightBulbWarm(**event_dict)
+        elif "motion" in event_dict["topic"]:
+            device = HueMotionSensor(**event_dict)
+        elif "consumption" in event_dict["payload"] and "state_l1" in event_dict["payload"]:
+            device = Relay(**event_dict)
         else:
             raise UnknownDeviceException
         return device
