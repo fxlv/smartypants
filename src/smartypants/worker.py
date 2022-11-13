@@ -6,6 +6,7 @@ from smartypants import zabbix
 from queue import Queue
 import time
 from devtools import debug
+from smartypants.pubsub import MqttPublisher
 
 from smartypants.datastructures import (
     TempSensor,
@@ -15,6 +16,7 @@ from smartypants.datastructures import (
     LightBulbWarm,
     HueMotionSensor,
     Relay,
+    Switch,
 )
 
 
@@ -68,12 +70,24 @@ class Worker(Thread):
             debug(metric)
             debug(agent.send_metric_and_check_success(metric))
 
+    def route_event(self, device):
+        debug(device)
+        if isinstance(device, Switch):
+            mqtt = MqttPublisher(self.c)
+            if device.payload.action == "on":
+                print("Switching on")
+                mqtt.on()
+            elif device.payload.action == "off":
+                print("Switching off")
+                mqtt.off()
+
     def _consume_event(self, event):
         debug(event)
         ob = self._object_from_event(event)
         print("Consuming event")
         print(ob)
         self.send_to_zabbix(ob)
+        self.route_event(ob)
 
     def _object_from_event(self, event_dict):
         device = None
@@ -87,6 +101,8 @@ class Worker(Thread):
             device = LightBulbWarm(**event_dict)
         elif "motion" in event_dict["topic"]:
             device = HueMotionSensor(**event_dict)
+        elif "action" in event_dict["payload"] and "switch" in event_dict["topic"]:
+            device = Switch(**event_dict)
         elif (
             "consumption" in event_dict["payload"]
             and "state_l1" in event_dict["payload"]

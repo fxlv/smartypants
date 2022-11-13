@@ -26,6 +26,21 @@ class ZabbixKeyValue(BaseModel):
         ]  # skip the topic name, only return the string after it
 
 
+class Update(BaseModel):
+    state: str
+
+
+class SwitchPayload(BaseModel):
+    action: str
+    linkquality: int
+    update: Update
+
+
+class Switch(BaseModel, ZigbeeDevice):
+    topic: str
+    payload: SwitchPayload
+
+
 class TempSensorPayload(BaseModel):
     battery: float
     humidity: float

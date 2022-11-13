@@ -16,6 +16,29 @@ def run_pubsub(c: config.Config):
     return p_thread
 
 
+class MqttPublisher:
+    def __init__(self, config=config.Config):
+        self.client = mqtt_client.Client()
+        debug(config)
+        self.client.connect(
+            config.mqtt.server,
+            config.mqtt.port,
+            config.mqtt.timeout,
+        )
+
+    def on(self):
+        self.client.publish("zigbee1/hallway_1/set", '{"state":"on"}')
+        self.client.publish("zigbee1/hallway_2/set", '{"state":"on"}')
+        self.client.publish("zigbee1/hallway_3/set", '{"state":"on"}')
+
+    def off(self):
+        self.client.publish("zigbee1/hallway_1/set", '{"state":"off"}')
+        self.client.publish("zigbee1/hallway_2/set", '{"state":"off"}')
+        self.client.publish("zigbee1/hallway_3/set", '{"state":"off"}')
+        self.client.publish("zigbee1/hallway_4/set", '{"state":"off"}')
+        self.client.publish("zigbee1/hallway_5/set", '{"state":"off"}')
+
+
 class PubSubThread(Thread):
     def __init__(self, c: config.Config):
         self.c: config.Config = c
