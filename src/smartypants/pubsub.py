@@ -50,7 +50,7 @@ class PubSubThread(Thread):
 
     def on_message(self, client, userdata, msg):
         self.q.put(self._get_mqtt_message(msg))
-        debug(f"{msg.topic} / {msg.payload}")
+        print(f"Pubsub> {msg.topic} / {msg.payload} / queue size: {self.q.qsize()}")
 
     def _get_client(self):
         return mqtt_client.Client()

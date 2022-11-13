@@ -360,6 +360,6 @@ class Worker(Thread):
     def run(self):
         print("thread running???")
         while True:
-            print(self.q.qsize())
+            print(f"Queue size: {self.q.qsize()}")
             self._consume_event(self.q.get())
-            time.sleep(5)
+            time.sleep(1)
