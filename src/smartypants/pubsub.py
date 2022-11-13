@@ -26,12 +26,18 @@ class MqttPublisher:
             config.mqtt.timeout,
         )
 
-    def on(self):
+    def wc_off(self):
+        self.client.publish("zigbee1/wc_fan/set", '{"state_l1":"off"}')
+        self.client.publish("zigbee1/guest_bathroom_floor/set", '{"state_l1":"off"}')
+    def wc_on(self):
+        self.client.publish("zigbee1/wc_fan/set", '{"state_l1":"on"}')
+        self.client.publish("zigbee1/guest_bathroom_floor/set", '{"state_l1":"on"}')
+    def hallway_on(self):
         self.client.publish("zigbee1/hallway_1/set", '{"state":"on"}')
         self.client.publish("zigbee1/hallway_2/set", '{"state":"on"}')
         self.client.publish("zigbee1/hallway_3/set", '{"state":"on"}')
 
-    def off(self):
+    def hallway_off(self):
         self.client.publish("zigbee1/hallway_1/set", '{"state":"off"}')
         self.client.publish("zigbee1/hallway_2/set", '{"state":"off"}')
         self.client.publish("zigbee1/hallway_3/set", '{"state":"off"}')

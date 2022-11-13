@@ -74,12 +74,20 @@ class Worker(Thread):
         debug(device)
         if isinstance(device, Switch):
             mqtt = MqttPublisher(self.c)
-            if device.payload.action == "on":
-                print("Switching on")
-                mqtt.on()
-            elif device.payload.action == "off":
-                print("Switching off")
-                mqtt.off()
+            if "entrance" in device.topic:
+                if device.payload.action == "on":
+                    print("Switching on")
+                    mqtt.hallway_on()
+                elif device.payload.action == "off":
+                    print("Switching off")
+                    mqtt.hallway_off()
+            elif "wc" in device.topic:
+                if device.payload.action == "on":
+                    print("Switching on")
+                    mqtt.wc_on()
+                elif device.payload.action == "off":
+                    print("Switching off")
+                    mqtt.wc_off()
 
     def _consume_event(self, event):
         debug(event)
