@@ -17,9 +17,12 @@ class ZabbixKeyValue(BaseModel):
     value_type: ZabbixValueType
 
     def get_key(self) -> str:
-        return f"{self.topic}_{self.key}".replace("/","_")
+        return f"{self.topic}_{self.key}".replace("/", "_")
+
     def get_name(self) -> str:
-        return f"{self.topic} {self.key}".split("/")[1] # skip the topic name, only return the string after it
+        return f"{self.topic} {self.key}".split("/")[
+            1
+        ]  # skip the topic name, only return the string after it
 
 
 class ZigbeeDevice:
@@ -50,6 +53,7 @@ class LightBulbColorPayload(BaseModel):
     state: str
     update: LightBulbUpdate
 
+
 class LightBulbWarmPayload(BaseModel):
     brightness: int
     color_mode: str
@@ -58,16 +62,20 @@ class LightBulbWarmPayload(BaseModel):
     state: str
     update: LightBulbUpdate
 
+
 class LightBulbColor(BaseModel, ZigbeeDevice):
     topic: str
     payload: LightBulbColorPayload
+
 
 class LightBulbWarm(BaseModel, ZigbeeDevice):
     topic: str
     payload: LightBulbWarmPayload
 
+
 class HueUpdate(BaseModel):
     state: str
+
 
 class HueMotionPayload(BaseModel):
     battery: int
@@ -78,6 +86,7 @@ class HueMotionPayload(BaseModel):
     temperature: float
     update: HueUpdate
 
+
 class RelayPayload(BaseModel):
     consumption: float
     linkquality: int
@@ -87,9 +96,12 @@ class RelayPayload(BaseModel):
     voltage: float
     state_l1: str
     state_l2: str
+
+
 class HueMotionSensor(BaseModel, ZigbeeDevice):
     topic: str
     payload: HueMotionPayload
+
     def get_zabbix_keys(self) -> list[ZabbixKeyValue]:
         """Defines the keys that we want to send to zabbix."""
         kv_list = []
@@ -127,9 +139,11 @@ class HueMotionSensor(BaseModel, ZigbeeDevice):
         )
         return kv_list
 
+
 class Relay(BaseModel, ZigbeeDevice):
     topic: str
     payload: RelayPayload
+
     def get_zabbix_keys(self) -> list[ZabbixKeyValue]:
         """Defines the keys that we want to send to zabbix."""
         kv_list = []
@@ -159,6 +173,7 @@ class Relay(BaseModel, ZigbeeDevice):
         )
         return kv_list
 
+
 class TempSensorPayload(BaseModel):
     battery: float
     humidity: float
@@ -171,6 +186,7 @@ class TempSensorPayload(BaseModel):
 class TempSensor(BaseModel, ZigbeeDevice):
     topic: str
     payload: TempSensorPayload
+
     def get_zabbix_keys(self) -> list[ZabbixKeyValue]:
         """Defines the keys that we want to send to zabbix."""
         kv_list = []
@@ -218,8 +234,8 @@ class TempSensor(BaseModel, ZigbeeDevice):
             ZabbixKeyValue(
                 topic=self.topic,
                 key="link_quality",
-                value = self.payload.linkquality,
-                value_type=ZabbixValueType.numeric_unsigned
+                value=self.payload.linkquality,
+                value_type=ZabbixValueType.numeric_unsigned,
             )
         )
         return kv_list
@@ -267,16 +283,16 @@ class Radiator(BaseModel, ZigbeeDevice):
             ZabbixKeyValue(
                 topic=self.topic,
                 key="battery_low",
-                value = int(self.payload.battery_low),
-                value_type=ZabbixValueType.numeric_unsigned
+                value=int(self.payload.battery_low),
+                value_type=ZabbixValueType.numeric_unsigned,
             )
         )
         kv_list.append(
             ZabbixKeyValue(
                 topic=self.topic,
                 key="link_quality",
-                value = self.payload.linkquality,
-                value_type=ZabbixValueType.numeric_unsigned
+                value=self.payload.linkquality,
+                value_type=ZabbixValueType.numeric_unsigned,
             )
         )
         return kv_list
@@ -351,7 +367,10 @@ class Worker(Thread):
             device = LightBulbWarm(**event_dict)
         elif "motion" in event_dict["topic"]:
             device = HueMotionSensor(**event_dict)
-        elif "consumption" in event_dict["payload"] and "state_l1" in event_dict["payload"]:
+        elif (
+            "consumption" in event_dict["payload"]
+            and "state_l1" in event_dict["payload"]
+        ):
             device = Relay(**event_dict)
         else:
             raise UnknownDeviceException
