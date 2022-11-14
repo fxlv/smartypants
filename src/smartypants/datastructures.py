@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-
+from typing import Optional
 from smartypants.zabbix import ZabbixValueType
 
 
@@ -31,8 +31,9 @@ class Update(BaseModel):
 
 
 class SwitchPayload(BaseModel):
-    action: str
+    action: Optional[str] = None
     linkquality: int
+    battery: Optional[int] = None
     update: Update
 
 
