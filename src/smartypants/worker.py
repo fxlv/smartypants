@@ -109,7 +109,7 @@ class Worker(Thread):
             device = LightBulbWarm(**event_dict)
         elif "motion" in event_dict["topic"]:
             device = HueMotionSensor(**event_dict)
-        elif "action" in event_dict["payload"] and "switch" in event_dict["topic"]:
+        elif "switch" in event_dict["topic"]:
             device = Switch(**event_dict)
         elif (
             "consumption" in event_dict["payload"]
