@@ -29,7 +29,16 @@ class ZabbixKeyValue(BaseModel):
 class Update(BaseModel):
     state: str
 
+class DoorSensorPayload(BaseModel):
+    battery: int
+    contact: bool
+    linkquality: int
+    temperature: int
+    voltage: int
 
+class DoorSensor(BaseModel, ZigbeeDevice):
+    topic: str
+    payload: DoorSensorPayload
 class SwitchPayload(BaseModel):
     action: Optional[str] = None
     linkquality: int
@@ -222,7 +231,7 @@ class LightBulbWarm(BaseModel, ZigbeeDevice):
 
 class RelayPayload(BaseModel):
     consumption: float
-    linkquality: int
+    linkquality: Optional[int] = None
     energy: float
     power: float
     temperature: float

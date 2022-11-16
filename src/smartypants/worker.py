@@ -17,6 +17,7 @@ from smartypants.datastructures import (
     HueMotionSensor,
     Relay,
     Switch,
+    DoorSensor
 )
 
 
@@ -111,6 +112,8 @@ class Worker(Thread):
             device = HueMotionSensor(**event_dict)
         elif "switch" in event_dict["topic"]:
             device = Switch(**event_dict)
+        elif "door" in event_dict["topic"]:
+            device = DoorSensor(**event_dict)
         elif (
             "consumption" in event_dict["payload"]
             and "state_l1" in event_dict["payload"]
