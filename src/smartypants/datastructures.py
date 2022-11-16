@@ -34,7 +34,7 @@ class SwitchPayload(BaseModel):
     action: Optional[str] = None
     linkquality: int
     battery: Optional[int] = None
-    update: Update
+    update: Optional[Update] = None
 
 
 class Switch(BaseModel, ZigbeeDevice):
