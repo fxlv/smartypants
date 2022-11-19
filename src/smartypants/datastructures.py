@@ -1,6 +1,8 @@
+import arrow
 from pydantic import BaseModel
 from typing import Optional
 from smartypants.zabbix import ZabbixValueType
+import arrow
 
 
 class ZigbeeDevice:
@@ -29,6 +31,7 @@ class ZabbixKeyValue(BaseModel):
 class Update(BaseModel):
     state: str
 
+
 class DoorSensorPayload(BaseModel):
     battery: int
     contact: bool
@@ -36,9 +39,42 @@ class DoorSensorPayload(BaseModel):
     temperature: int
     voltage: int
 
+
 class DoorSensor(BaseModel, ZigbeeDevice):
     topic: str
     payload: DoorSensorPayload
+
+    def is_open(self):
+        if self.payload.contact:
+            # if contact is True that means door is closed
+            return False
+        return True
+
+
+class LightPayload(BaseModel):
+    brightness: int
+    color_mode: str
+    color_temp: int
+    linkquality: int
+    state: str
+    update: Update
+
+
+class Light(BaseModel, ZigbeeDevice):
+    topic: str
+    payload: LightPayload
+    timestamp: Optional[object] = None
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        self.timestamp = arrow.get()
+
+    def is_on(self):
+        if self.payload.state == "ON":
+            return True
+        return False
+
+
 class SwitchPayload(BaseModel):
     action: Optional[str] = None
     linkquality: int

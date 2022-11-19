@@ -7,6 +7,7 @@ from queue import Queue
 import time
 from devtools import debug
 from smartypants.pubsub import MqttPublisher
+import arrow
 
 from smartypants.datastructures import (
     TempSensor,
@@ -17,8 +18,11 @@ from smartypants.datastructures import (
     HueMotionSensor,
     Relay,
     Switch,
-    DoorSensor
+    DoorSensor,
+    Light,
 )
+
+from smartypants.statekeeper import StateKeeper
 
 
 class UnknownDeviceException(Exception):
@@ -28,9 +32,10 @@ class UnknownDeviceException(Exception):
 class Worker(Thread):
     """Worker consumes events from queue and does stuff with them"""
 
-    def __init__(self, c: config.Config, q: Queue):
+    def __init__(self, c: config.Config, q: Queue, s: StateKeeper):
         self.c = c
         self.q = q
+        self.s = s
         Thread.__init__(self)
 
     def create_key_if_not_exists(self, key_value: ZabbixKeyValue):
@@ -68,13 +73,12 @@ class Worker(Thread):
                 value=key.value,
             )
             agent.connect()
-            debug(metric)
             debug(agent.send_metric_and_check_success(metric))
 
     def route_event(self, device):
-        debug(device)
+        self.s.add_device(device)
+        mqtt = MqttPublisher(self.c, self.s)
         if isinstance(device, Switch):
-            mqtt = MqttPublisher(self.c)
             if "entrance" in device.topic:
                 if device.payload.action == "on":
                     print("Switching on")
@@ -89,9 +93,29 @@ class Worker(Thread):
                 elif device.payload.action == "off":
                     print("Switching off")
                     mqtt.wc_off()
+        elif isinstance(device, DoorSensor):
+            print("Door sensor triggered")
+            if "entrance" in device.topic:
+                door_sensor = self.s.get_device_by_topic(device.topic)
+                hallway1 = self.s.get_device_by_topic("zigbee1/hallway_1")
+                if not hallway1 or not door_sensor:
+                    print("either hallway or sensor state missing")
+                    return
+                time_now = arrow.get()
+                if (time_now - hallway1.timestamp).seconds > 20:
+                    print("Timeout passed, acting")
+                    # door sensor can trigger light only if the light state has not changed within last 30 sec
+                    if door_sensor.is_open():
+                        print("Door is open")
+                        if arrow.get().time().hour > 16:
+                            # only trigger in the evening
+                            mqtt.hallway_on()
+                        else:
+                            print("Door open, but time not matching")
+                else:
+                    print("Light state already changed recently, ignoring")
 
     def _consume_event(self, event):
-        debug(event)
         ob = self._object_from_event(event)
         print("Consuming event")
         print(ob)
@@ -114,6 +138,8 @@ class Worker(Thread):
             device = Switch(**event_dict)
         elif "door" in event_dict["topic"]:
             device = DoorSensor(**event_dict)
+        elif "hallway_" in event_dict["topic"]:
+            device = Light(**event_dict)
         elif (
             "consumption" in event_dict["payload"]
             and "state_l1" in event_dict["payload"]

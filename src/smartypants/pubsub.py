@@ -10,15 +10,19 @@ from smartypants import config
 import time
 
 
-def run_pubsub(c: config.Config):
-    p_thread = PubSubThread(c)
+from smartypants.statekeeper import StateKeeper
+
+
+def run_pubsub(c: config.Config, s: StateKeeper):
+    p_thread = PubSubThread(c, s)
     p_thread.start()
     return p_thread
 
 
 class MqttPublisher:
-    def __init__(self, config=config.Config):
+    def __init__(self, config: config.Config, s: StateKeeper):
         self.client = mqtt_client.Client()
+        self.s = s
         debug(config)
         self.client.connect(
             config.mqtt.server,
@@ -29,9 +33,11 @@ class MqttPublisher:
     def wc_off(self):
         self.client.publish("zigbee1/wc_fan/set", '{"state_l1":"off"}')
         self.client.publish("zigbee1/guest_bathroom_floor/set", '{"state_l1":"off"}')
+
     def wc_on(self):
         self.client.publish("zigbee1/wc_fan/set", '{"state_l1":"on"}')
         self.client.publish("zigbee1/guest_bathroom_floor/set", '{"state_l1":"on"}')
+
     def hallway_on(self):
         self.client.publish("zigbee1/hallway_1/set", '{"state":"on"}')
         self.client.publish("zigbee1/hallway_2/set", '{"state":"on"}')
@@ -46,7 +52,7 @@ class MqttPublisher:
 
 
 class PubSubThread(Thread):
-    def __init__(self, c: config.Config):
+    def __init__(self, c: config.Config, s: StateKeeper):
         self.c: config.Config = c
         self.q = Queue()
         self.stop_event = Event()
