@@ -77,7 +77,7 @@ class Light(BaseModel, ZigbeeDevice):
 
 class SwitchPayload(BaseModel):
     action: Optional[str] = None
-    linkquality: int
+    linkquality: Optional[int] = None
     battery: Optional[int] = None
     update: Optional[Update] = None
 
